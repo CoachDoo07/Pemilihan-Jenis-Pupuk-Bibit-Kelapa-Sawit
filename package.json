@@ -1,0 +1,29 @@
+{
+  "name": "spk-pupuk-bibit-sawit-saw",
+  "version": "1.0.0",
+  "description": "Sistem Pendukung Keputusan Pemilihan Jenis Pupuk Bibit Kelapa Sawit Menggunakan Metode SAW",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test/saw.test.js && node test/dosage.test.js && node test/audit.test.js",
+    "test:e2e": "node test/e2e.test.js",
+    "seed": "node src/config/seed.js"
+  },
+  "keywords": [
+    "spk",
+    "saw",
+    "sawit",
+    "pupuk",
+    "decision-support-system",
+    "palm-oil-nursery"
+  ],
+  "author": "Rafael Rizky Luga Tanjung (3125522007) & Aldo Rachmat Hidayat (3125522003)",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^13.2.0",
+    "ejs": "^7.0.2",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0"
+  }
+}

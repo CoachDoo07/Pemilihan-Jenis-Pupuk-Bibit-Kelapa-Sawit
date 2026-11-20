@@ -1,0 +1,333 @@
+<%- include('../layouts/header') %>
+
+<div class="space-y-6">
+
+  <!-- Header Breadcrumb & Admin Status -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <nav class="flex text-xs text-slate-400 mb-1" aria-label="Breadcrumb">
+        <a href="/" class="hover:text-slate-600">Dashboard</a>
+        <span class="mx-2">/</span>
+        <span class="text-slate-600 font-medium">Pengaturan</span>
+      </nav>
+      <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Pengaturan Bobot & Tabel Kecocokan</h1>
+      <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+        Konfigurasi parameter bobot kriteria SAW dan tabel kecocokan agronomi (skala 1-5).
+      </p>
+    </div>
+
+    <!-- Admin Status Badge -->
+    <div class="flex items-center space-x-2">
+      <% if (user) { %>
+        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-palm-100 text-palm-800 font-bold text-xs border border-palm-300">
+          <i class="fas fa-unlock mr-1.5 text-palm-600"></i> Mode Admin Aktif (<%= user.name %>)
+        </span>
+      <% } else { %>
+        <a href="/login" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-300 transition">
+          <i class="fas fa-lock mr-1.5 text-amber-600"></i> Login Admin untuk Mengedit
+        </a>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- SECTION 1: PENGATURAN BOBOT KRITERIA -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-slate-100 gap-2 mb-4">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base flex items-center">
+          <i class="fas fa-balance-scale text-palm-600 mr-2"></i> Bobot Kriteria SAW (\( w_j \))
+        </h3>
+        <p class="text-xs text-slate-400">Total penjumlahan seluruh bobot kriteria wajib bernilai tepat 1.00 (100%).</p>
+      </div>
+
+      <!-- Real-time weight badge -->
+      <div id="weight-indicator" class="px-3 py-1 rounded-xl text-xs font-bold font-mono <%= isWeightValid ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-red-100 text-red-800 border border-red-300' %>">
+        Total Bobot: <span id="total-weight-display"><%= totalWeight.toFixed(2) %></span> / 1.00
+      </div>
+    </div>
+
+    <form action="/pengaturan/bobot" method="POST" id="form-weights" class="space-y-4">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <% criteria.forEach(c => { %>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-mono font-bold text-palm-700 text-sm"><%= c.code %></span>
+              <span class="text-[10px] uppercase font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                <%= c.type %>
+              </span>
+            </div>
+            <label for="w_<%= c.code %>" class="block font-semibold text-slate-800 text-xs mb-1">
+              <%= c.name %>
+            </label>
+            <input type="number" step="0.01" min="0.01" max="1" id="w_<%= c.code %>" name="w_<%= c.code %>" 
+              value="<%= Number(c.weight).toFixed(2) %>" <%= user ? '' : 'disabled' %> required
+              class="weight-input w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-palm-500 font-mono font-bold text-sm bg-white">
+            <p class="text-[11px] text-slate-400 mt-1 line-clamp-2"><%= c.description %></p>
+          </div>
+        <% }) %>
+      </div>
+
+      <% if (user) { %>
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
+          <p id="weight-validation-msg" class="text-xs text-slate-500">
+            Pastikan total 4 kriteria berjumlah 1.00 sebelum menyimpan.
+          </p>
+          <div class="flex items-center space-x-2">
+            <button type="submit" id="btn-save-weights" class="px-5 py-2 rounded-xl bg-palm-600 hover:bg-palm-700 text-white font-bold text-xs transition shadow-sm">
+              <i class="fas fa-save mr-1.5"></i> Simpan Perubahan Bobot
+            </button>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="pt-2 text-center text-xs text-slate-400">
+          <i class="fas fa-info-circle mr-1 text-slate-400"></i> Mode lihat saja. Silakan login sebagai admin jika ingin mengubah bobot kriteria.
+        </div>
+      <% } %>
+    </form>
+  </div>
+
+  <!-- SECTION 2: RESET DEFAULT RANCANGAN AWAL (Point 13) -->
+  <% if (user) { %>
+    <div class="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div>
+        <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Reset ke Nilai Default Rancangan Awal</h4>
+        <p class="text-[11px] text-slate-500 mt-0.5">
+          Kembalikan bobot kriteria dan seluruh nilai matriks kecocokan ke default rancangan awal (belum tervalidasi literatur/petugas).
+        </p>
+      </div>
+      <form action="/pengaturan/reset" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan seluruh bobot dan tabel kecocokan ke default rancangan awal (belum tervalidasi literatur/petugas)?');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition">
+          <i class="fas fa-undo mr-1 text-slate-500"></i> Reset Default Rancangan Awal
+        </button>
+      </form>
+    </div>
+  <% } %>
+
+  <!-- SECTION 3: TABEL KECOCOKAN AGRONOMI (1 - 5) -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    
+    <div class="p-5 border-b border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base flex items-center">
+          <i class="fas fa-table text-palm-600 mr-2"></i> Tabel Nilai Kecocokan Alternatif Pupuk (\( x_{ij} \))
+        </h3>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Skala Likert 1 - 5: (1 = Sangat Kurang Cocok, 2 = Kurang Cocok, 3 = Cukup Cocok, 4 = Cocok, 5 = Sangat Cocok).
+        </p>
+      </div>
+      <span class="text-xs font-mono font-medium text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+        Total 60 Kombinasi
+      </span>
+    </div>
+
+    <!-- Accordion / Grouped Matrix by Criteria -->
+    <div class="p-5 space-y-6">
+      
+      <% Object.keys(groupedMatrix).forEach(key => { 
+        const group = groupedMatrix[key];
+      %>
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div class="bg-slate-100/70 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 rounded bg-palm-700 text-white font-mono text-[11px] font-bold"><%= group.criteriaCode %></span>
+              <span class="font-bold text-xs sm:text-sm text-slate-800"><%= group.subcriteriaName %></span>
+            </div>
+            <span class="text-[11px] text-slate-500 font-mono">Kode: <%= group.subcriteriaCode %></span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+              <thead class="bg-slate-50/50 text-slate-600 text-[11px] font-semibold">
+                <tr>
+                  <th class="px-4 py-2 text-left w-20">Kode</th>
+                  <th class="px-4 py-2 text-left w-48">Nama Alternatif Pupuk</th>
+                  <th class="px-3 py-2 text-center w-28">Nilai Kecocokan (1-5)</th>
+                  <th class="px-4 py-2 text-left">Dasar Pertimbangan Agronomi</th>
+                  <% if (user) { %>
+                    <th class="px-3 py-2 text-right w-20">Ubah</th>
+                  <% } %>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <% group.items.forEach(item => { %>
+                  <tr class="hover:bg-slate-50/70">
+                    <td class="px-4 py-2 font-mono font-bold text-palm-700"><%= item.fertilizer_code %></td>
+                    <td class="px-4 py-2 font-medium text-slate-800"><%= item.fertilizer_name %></td>
+                    <td class="px-3 py-2 text-center">
+                      <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg font-bold font-mono text-xs
+                        <%= item.score === 5 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 
+                           (item.score === 4 ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                           (item.score === 3 ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                           'bg-red-50 text-red-700 border border-red-200')) %>">
+                        <%= item.score %>
+                      </span>
+                    </td>
+                    <td class="px-4 py-2 text-slate-600 text-[11px] leading-relaxed">
+                      <%= item.rationale %>
+                    </td>
+                    <% if (user) { %>
+                      <td class="px-3 py-2 text-right">
+                        <button type="button" 
+                          class="btn-edit-matrix p-1 text-slate-400 hover:text-palm-700 rounded transition" 
+                          title="Edit Sel"
+                          data-id="<%= item.id %>"
+                          data-fert-name="<%= item.fertilizer_name %>"
+                          data-sub-name="<%= group.subcriteriaName %>"
+                          data-score="<%= item.score %>"
+                          data-rationale="<%= item.rationale || '' %>">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                      </td>
+                    <% } %>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% }) %>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Edit Matrix Modal (for Admin) -->
+<% if (user) { %>
+  <div id="edit-matrix-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="font-bold text-slate-800 text-base">Edit Nilai Kecocokan</h3>
+        <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form action="/pengaturan/matriks" method="POST" class="space-y-4">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" id="modal-matrix-id" name="id">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Kondisi & Pupuk</label>
+          <div id="modal-title-display" class="font-bold text-sm text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            -
+          </div>
+        </div>
+
+        <div>
+          <label for="modal-score" class="block text-xs font-semibold text-slate-700 mb-1">
+            Nilai Kecocokan (1 - 5) <span class="text-red-500">*</span>
+          </label>
+          <select id="modal-score" name="score" required class="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-palm-500">
+            <option value="5">5 - Sangat Cocok (Prioritas Utama)</option>
+            <option value="4">4 - Cocok (Rekomendasi Baik)</option>
+            <option value="3">3 - Cukup Cocok (Toleran)</option>
+            <option value="2">2 - Kurang Cocok (Tidak Dianjurkan)</option>
+            <option value="1">1 - Sangat Kurang Cocok (Hindari)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="modal-rationale" class="block text-xs font-semibold text-slate-700 mb-1">
+            Dasar Pertimbangan Agronomi
+          </label>
+          <textarea id="modal-rationale" name="rationale" rows="3" class="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-palm-500" placeholder="Alasan kecocokan..."></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs hover:bg-slate-100">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-palm-600 hover:bg-palm-700 text-white font-bold text-xs transition">
+            Simpan Nilai
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<!-- Script Live Weight Calculator & Modal -->
+<script>
+  function recalculateWeights() {
+    const inputs = document.querySelectorAll('.weight-input');
+    let sum = 0;
+    inputs.forEach(inp => {
+      const val = parseFloat(inp.value) || 0;
+      sum += val;
+    });
+
+    const display = document.getElementById('total-weight-display');
+    const indicator = document.getElementById('weight-indicator');
+    const msg = document.getElementById('weight-validation-msg');
+    const btn = document.getElementById('btn-save-weights');
+
+    if (display) display.textContent = sum.toFixed(2);
+
+    const isValid = Math.abs(sum - 1.0) < 0.001;
+
+    if (indicator) {
+      if (isValid) {
+        indicator.className = 'px-3 py-1 rounded-xl text-xs font-bold font-mono bg-emerald-100 text-emerald-800 border border-emerald-300';
+      } else {
+        indicator.className = 'px-3 py-1 rounded-xl text-xs font-bold font-mono bg-red-100 text-red-800 border border-red-300';
+      }
+    }
+
+    if (msg) {
+      if (isValid) {
+        msg.className = 'text-xs text-emerald-700 font-semibold';
+        msg.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Total bobot tepat 1.00 (100%). Siap disimpan.';
+      } else {
+        msg.className = 'text-xs text-red-600 font-semibold';
+        msg.innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i> Total bobot saat ini ${sum.toFixed(2)}. Wajib bernilai tepat 1.00!`;
+      }
+    }
+
+    if (btn) {
+      btn.disabled = !isValid;
+      if (!isValid) {
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  }
+
+  document.querySelectorAll('.weight-input').forEach(inp => {
+    inp.addEventListener('input', recalculateWeights);
+  });
+
+  // Event listener untuk tombol edit matriks tanpa inline onclick (Point 8)
+  document.querySelectorAll('.btn-edit-matrix').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openEditModal(
+        btn.dataset.id,
+        btn.dataset.fertName,
+        btn.dataset.subName,
+        btn.dataset.score,
+        btn.dataset.rationale
+      );
+    });
+  });
+
+  function openEditModal(id, fertName, subName, score, rationale) {
+    const modal = document.getElementById('edit-matrix-modal');
+    if (!modal) return;
+    document.getElementById('modal-matrix-id').value = id;
+    document.getElementById('modal-title-display').textContent = `${subName} → ${fertName}`;
+    document.getElementById('modal-score').value = score;
+    document.getElementById('modal-rationale').value = rationale;
+    modal.classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+    const modal = document.getElementById('edit-matrix-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+</script>
+
+<%- include('../layouts/footer') %>

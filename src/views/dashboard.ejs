@@ -1,0 +1,375 @@
+<%- include('layouts/header') %>
+
+<div class="space-y-6">
+
+  <!-- Welcome Hero Banner -->
+  <div class="bg-gradient-to-r from-palm-800 to-palm-900 rounded-2xl shadow-md text-white p-6 sm:p-8 relative overflow-hidden">
+    <div class="absolute right-0 top-0 bottom-0 opacity-10 pointer-events-none flex items-center pr-6">
+      <i class="fas fa-seedling text-9xl"></i>
+    </div>
+    
+    <div class="relative z-10 max-w-3xl">
+      <div class="inline-flex items-center space-x-2 bg-palm-700/80 text-palm-200 text-xs px-3 py-1 rounded-full mb-3 border border-palm-500/30">
+        <i class="fas fa-award"></i>
+        <span>Sistem Pendukung Keputusan Berbasis SAW & Rule-Based Agronomi</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
+        Sistem Rekomendasi Pupuk Bibit Kelapa Sawit
+      </h1>
+      <p class="text-palm-100 text-sm sm:text-base leading-relaxed mb-5">
+        Membantu pengawas pembibitan (nursery) sawit menentukan jenis pupuk paling tepat, mengevaluasi kelayakan waktu pemupukan untuk mencegah risiko pencucian hara, serta memberikan takaran dosis yang presisi.
+      </p>
+
+      <div class="flex flex-wrap gap-3">
+        <a href="/rekomendasi/baru" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-palm-500 hover:bg-palm-400 text-white font-semibold text-sm shadow-md transition transform hover:-translate-y-0.5">
+          <i class="fas fa-play-circle mr-2"></i> Mulai Analisis Rekomendasi
+        </a>
+        <a href="/rekomendasi/baru#demo-section" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-palm-700/80 hover:bg-palm-700 text-palm-100 font-medium text-sm border border-palm-600 transition">
+          <i class="fas fa-magic mr-2 text-palm-300"></i> Coba Skenario Simulasi Demo
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 Stat Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+    
+    <!-- Card 1: Total Rekomendasi -->
+    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Rekomendasi</p>
+        <h3 class="text-2xl font-bold text-slate-800 mt-1"><%= totalRecs %></h3>
+        <p class="text-xs text-slate-400 mt-1">Data analisis tersimpan</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+        <i class="fas fa-database"></i>
+      </div>
+    </div>
+
+    <!-- Card 2: Pupuk Terbanyak -->
+    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Pupuk Terfavorit</p>
+        <h3 class="text-xl font-bold text-palm-700 mt-1 truncate max-w-[140px]" title="<%= topFert %>">
+          <%= topFert %>
+        </h3>
+        <p class="text-xs text-slate-400 mt-1">
+          <% if (topFertCount > 0) { %>
+            Direkomendasikan <%= topFertCount %> kali
+          <% } else { %>
+            Belum ada data
+          <% } %>
+        </p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-palm-600 flex items-center justify-center text-xl">
+        <i class="fas fa-trophy"></i>
+      </div>
+    </div>
+
+    <!-- Card 3: Evaluasi Kelayakan Waktu -->
+    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Kelayakan Waktu</p>
+        <div class="flex items-center space-x-2 mt-1">
+          <span class="inline-flex items-center text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+            <i class="fas fa-check mr-1"></i> <%= timingStats.LAYAK %>
+          </span>
+          <span class="inline-flex items-center text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+            <i class="fas fa-tint mr-1"></i> <%= timingStats.SIRAM_DAHULU %>
+          </span>
+          <span class="inline-flex items-center text-xs font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded">
+            <i class="fas fa-ban mr-1"></i> <%= timingStats.TUNDA %>
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1.5">Layak / Siram / Tunda</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+        <i class="fas fa-clock"></i>
+      </div>
+    </div>
+
+    <!-- Card 4: Bobot Kriteria SAW -->
+    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Kriteria & Bobot</p>
+        <h3 class="text-2xl font-bold text-slate-800 mt-1">4 Kriteria</h3>
+        <p class="text-xs text-palm-600 font-medium mt-1">
+          <i class="fas fa-check-circle mr-1"></i> Total Bobot = 1.00 (100%)
+        </p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+        <i class="fas fa-balance-scale"></i>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Charts & Criteria Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Chart: Distribusi Pupuk Terpilih -->
+    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm lg:col-span-1">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center">
+          <i class="fas fa-chart-pie text-palm-600 mr-2"></i> Distribusi Pupuk Terpilih
+        </h3>
+        <span class="text-xs text-slate-400">Peringkat 1</span>
+      </div>
+      
+      <div class="relative h-64 flex items-center justify-center">
+        <% if (fertDistribution && fertDistribution.length > 0) { %>
+          <canvas id="fertDoughnutChart"></canvas>
+        <% } else { %>
+          <div class="text-center text-slate-400 text-sm">
+            <i class="fas fa-chart-pie text-4xl mb-2 text-slate-200"></i>
+            <p>Belum ada data rekomendasi</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Chart: Rekomendasi per Fase Pertumbuhan -->
+    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm lg:col-span-1">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center">
+          <i class="fas fa-chart-bar text-blue-600 mr-2"></i> Distribusi per Fase Bibit
+        </h3>
+        <span class="text-xs text-slate-400">Pre vs Main</span>
+      </div>
+      
+      <div class="relative h-64 flex items-center justify-center">
+        <% if (phaseDistribution && phaseDistribution.length > 0) { %>
+          <canvas id="phaseBarChart"></canvas>
+        <% } else { %>
+          <div class="text-center text-slate-400 text-sm">
+            <i class="fas fa-chart-bar text-4xl mb-2 text-slate-200"></i>
+            <p>Belum ada data distribusi fase</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Card Info Bobot & Formula SAW -->
+    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm lg:col-span-1 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center">
+            <i class="fas fa-sliders-h text-purple-600 mr-2"></i> Bobot Kriteria Aktif
+          </h3>
+          <a href="/pengaturan" class="text-xs text-palm-700 hover:underline font-medium">Ubah Bobot</a>
+        </div>
+
+        <ul class="space-y-2.5 text-xs">
+          <% criteria.forEach(c => { %>
+            <li class="p-2.5 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div>
+                <span class="font-mono font-bold text-palm-700 mr-1.5"><%= c.code %></span>
+                <span class="font-medium text-slate-700"><%= c.name %></span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <span class="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                  <%= Number(c.weight).toFixed(2) %>
+                </span>
+                <span class="text-[10px] text-slate-400">(<%= (c.weight * 100).toFixed(0) %>%)</span>
+              </div>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+
+      <!-- Quick agronomic reminder -->
+      <div class="mt-4 p-3 bg-palm-50 rounded-lg border border-palm-100 text-xs text-palm-900 leading-relaxed">
+        <i class="fas fa-info-circle text-palm-600 mr-1"></i>
+        <strong>Prinsip SAW:</strong> Seluruh kriteria bertipe <em>Benefit</em>. Skor akhir \( V_i = \sum (w_j \times r_{ij}) \). Bila selisih skor 1 & 2 &lt; 0.05, sistem menetapkannya sebagai <strong>pilihan setara</strong>.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Recommendations Table -->
+  <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base flex items-center">
+          <i class="fas fa-history text-palm-600 mr-2"></i> 5 Analisis Rekomendasi Terakhir
+        </h3>
+        <p class="text-xs text-slate-400 mt-0.5">Daftar rekomendasi terbaru yang tersimpan dalam sistem</p>
+      </div>
+      <a href="/riwayat" class="inline-flex items-center text-xs font-semibold text-palm-700 hover:text-palm-800 bg-palm-50 hover:bg-palm-100 px-3 py-1.5 rounded-lg border border-palm-200 transition">
+        Lihat Seluruh Riwayat (<%= totalRecs %>) <i class="fas fa-arrow-right ml-1.5"></i>
+      </a>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+          <tr>
+            <th class="px-4 py-3 text-left">Kode Batch / Varietas</th>
+            <th class="px-4 py-3 text-left">Kondisi Bibit</th>
+            <th class="px-4 py-3 text-left">Fase</th>
+            <th class="px-4 py-3 text-left">Status Waktu</th>
+            <th class="px-4 py-3 text-left">Pupuk Terpilih</th>
+            <th class="px-4 py-3 text-center">Skor SAW</th>
+            <th class="px-4 py-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          <% if (recentRecs && recentRecs.length > 0) { %>
+            <% recentRecs.forEach(r => { %>
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="px-4 py-3.5">
+                  <div class="font-bold text-slate-800"><%= r.batch_code %></div>
+                  <div class="text-[11px] text-slate-400"><%= r.variety %></div>
+                </td>
+                <td class="px-4 py-3.5">
+                  <% if (r.leaf_condition === 'menguning_merata') { %>
+                    <span class="inline-block px-2 py-0.5 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded text-[11px]">Menguning Merata (N)</span>
+                  <% } else if (r.leaf_condition === 'menguning_tepi') { %>
+                    <span class="inline-block px-2 py-0.5 bg-orange-50 text-orange-800 border border-orange-200 rounded text-[11px]">Menguning Tepi (K)</span>
+                  <% } else if (r.leaf_condition === 'pucat_kerdil') { %>
+                    <span class="inline-block px-2 py-0.5 bg-rose-50 text-rose-800 border border-rose-200 rounded text-[11px]">Pucat Kerdil (P)</span>
+                  <% } else { %>
+                    <span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded text-[11px]">Normal (Sehat)</span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3.5 capitalize text-slate-600">
+                  <%= r.growth_phase.replace(/_/g, ' ') %>
+                </td>
+                <td class="px-4 py-3.5">
+                  <% if (r.timing_status === 'LAYAK') { %>
+                    <span class="inline-flex items-center px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-semibold text-[11px]">
+                      <i class="fas fa-check-circle mr-1 text-emerald-600"></i> Layak
+                    </span>
+                  <% } else if (r.timing_status === 'SIRAM_DAHULU') { %>
+                    <span class="inline-flex items-center px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold text-[11px]">
+                      <i class="fas fa-tint mr-1 text-amber-600"></i> Siram Dahulu
+                    </span>
+                  <% } else { %>
+                    <span class="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-800 rounded font-semibold text-[11px]">
+                      <i class="fas fa-ban mr-1 text-red-600"></i> Tunda
+                    </span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3.5">
+                  <div class="font-bold text-slate-800 flex items-center">
+                    <%= r.top_fertilizer_name %>
+                    <% if (r.is_equivalent) { %>
+                      <span class="ml-1.5 px-1.5 py-0.2 text-[10px] bg-purple-100 text-purple-700 font-bold rounded border border-purple-200" title="Pilihan Setara (< 0.05)">Setara</span>
+                    <% } %>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5 text-center font-mono font-bold text-slate-700">
+                  <%= r.top_score !== null ? r.top_score.toFixed(4) : '-' %>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <a href="/rekomendasi/hasil/<%= r.id %>" class="inline-flex items-center px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded font-medium transition text-[11px]">
+                    Detail SAW <i class="fas fa-chevron-right ml-1 text-slate-400"></i>
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="px-4 py-8 text-center text-slate-400">
+                Belum ada data rekomendasi tersimpan. Klik "Mulai Analisis Rekomendasi" di atas.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Inisialisasi Chart.js -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1. Doughnut Chart Distribusi Pupuk
+    <% if (fertDistribution && fertDistribution.length > 0) { %>
+      const fertCtx = document.getElementById('fertDoughnutChart');
+      if (fertCtx) {
+        const fertLabels = <%- safeJson(fertDistribution.map(d => d.top_fertilizer_name)) %>;
+        const fertData = <%- safeJson(fertDistribution.map(d => d.count)) %>;
+        
+        new Chart(fertCtx, {
+          type: 'doughnut',
+          data: {
+            labels: fertLabels,
+            datasets: [{
+              data: fertData,
+              backgroundColor: [
+                '#16a34a', // NPK (Green)
+                '#3b82f6', // Urea (Blue)
+                '#f59e0b', // POC (Amber)
+                '#8b5cf6', // KCl (Purple)
+                '#ec4899'  // SP-36 (Pink)
+              ],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { boxWidth: 12, font: { size: 11, family: 'Inter' } }
+              }
+            },
+            cutout: '65%'
+          }
+        });
+      }
+    <% } %>
+
+    // 2. Bar Chart Distribusi Fase
+    <% if (phaseDistribution && phaseDistribution.length > 0) { %>
+      const phaseCtx = document.getElementById('phaseBarChart');
+      if (phaseCtx) {
+        const phaseNameMap = {
+          'pre_nursery': 'Pre-Nursery',
+          'main_nursery_awal': 'Main Awal',
+          'main_nursery_lanjut': 'Main Lanjut'
+        };
+        const rawPhases = <%- safeJson(phaseDistribution) %>;
+        const phaseLabels = rawPhases.map(p => phaseNameMap[p.growth_phase] || p.growth_phase);
+        const phaseData = rawPhases.map(p => p.count);
+
+        new Chart(phaseCtx, {
+          type: 'bar',
+          data: {
+            labels: phaseLabels,
+            datasets: [{
+              label: 'Jumlah Rekomendasi',
+              data: phaseData,
+              backgroundColor: '#059669',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, font: { family: 'Inter', size: 11 } },
+                grid: { color: '#f1f5f9' }
+              },
+              x: {
+                ticks: { font: { family: 'Inter', size: 11 } },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      }
+    <% } %>
+  });
+</script>
+
+<%- include('layouts/footer') %>

@@ -1,0 +1,185 @@
+<%- include('../layouts/header') %>
+
+<div class="space-y-6">
+
+  <!-- Header & Toolbar -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <nav class="flex text-xs text-slate-400 mb-1" aria-label="Breadcrumb">
+        <a href="/" class="hover:text-slate-600">Dashboard</a>
+        <span class="mx-2">/</span>
+        <span class="text-slate-600 font-medium">Riwayat</span>
+      </nav>
+      <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Riwayat Analisis Rekomendasi</h1>
+      <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+        Seluruh data hasil evaluasi SPK tersimpan untuk audit, monitoring pertumbuhan bibit, dan pelaporan berkala.
+      </p>
+    </div>
+
+    <!-- Actions: Export CSV & Kosongkan -->
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="/riwayat/export/csv" class="inline-flex items-center px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-300 shadow-sm transition">
+        <i class="fas fa-file-csv mr-1.5 text-emerald-600 text-sm"></i> Unduh File CSV
+      </a>
+
+      <% if (user) { %>
+        <form action="/riwayat/kosongkan" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SELURUH riwayat rekomendasi? Tindakan ini tidak dapat dibatalkan.');">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="inline-flex items-center px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-xs border border-red-200 transition">
+            <i class="fas fa-trash-alt mr-1.5"></i> Kosongkan Riwayat
+          </button>
+        </form>
+      <% } %>
+
+      <a href="/rekomendasi/baru" class="inline-flex items-center px-4 py-2 rounded-xl bg-palm-600 hover:bg-palm-700 text-white font-bold text-xs shadow-sm transition">
+        <i class="fas fa-plus mr-1.5"></i> Tambah Analisis
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+    <form action="/riwayat" method="GET" class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+      
+      <!-- Status Waktu -->
+      <div>
+        <label for="status" class="block font-semibold text-slate-600 mb-1">Status Kelayakan Waktu</label>
+        <select id="status" name="status" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-palm-500">
+          <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>Semua Status</option>
+          <option value="LAYAK" <%= filters.status === 'LAYAK' ? 'selected' : '' %>>Layak Pemupukan</option>
+          <option value="SIRAM_DAHULU" <%= filters.status === 'SIRAM_DAHULU' ? 'selected' : '' %>>Siram Dahulu</option>
+          <option value="TUNDA" <%= filters.status === 'TUNDA' ? 'selected' : '' %>>Tunda Pemupukan</option>
+        </select>
+      </div>
+
+      <!-- Fase Bibit -->
+      <div>
+        <label for="phase" class="block font-semibold text-slate-600 mb-1">Fase Pertumbuhan Bibit</label>
+        <select id="phase" name="phase" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-palm-500">
+          <option value="all" <%= filters.phase === 'all' ? 'selected' : '' %>>Semua Fase</option>
+          <option value="pre_nursery" <%= filters.phase === 'pre_nursery' ? 'selected' : '' %>>Pre-Nursery (1-3 bln)</option>
+          <option value="main_nursery_awal" <%= filters.phase === 'main_nursery_awal' ? 'selected' : '' %>>Main Nursery Awal (4-7 bln)</option>
+          <option value="main_nursery_lanjut" <%= filters.phase === 'main_nursery_lanjut' ? 'selected' : '' %>>Main Nursery Lanjut (8-12 bln)</option>
+        </select>
+      </div>
+
+      <!-- Cari Text -->
+      <div>
+        <label for="q" class="block font-semibold text-slate-600 mb-1">Cari Batch / Varietas / Pupuk</label>
+        <input type="text" id="q" name="q" value="<%= filters.q %>" placeholder="Misal: BS-2026 atau NPK..."
+          class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-palm-500">
+      </div>
+
+      <!-- Submit & Reset Filter -->
+      <div class="flex items-end space-x-2">
+        <button type="submit" class="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg transition">
+          <i class="fas fa-filter mr-1"></i> Saring
+        </button>
+        <a href="/riwayat" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-lg transition" title="Reset Saringan">
+          <i class="fas fa-undo"></i>
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Table Recommendations -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+          <tr>
+            <th class="px-3 py-3 text-center w-12">No</th>
+            <th class="px-4 py-3 text-left">Kode Batch & Varietas</th>
+            <th class="px-4 py-3 text-left">Kondisi Bibit</th>
+            <th class="px-3 py-3 text-left">Fase</th>
+            <th class="px-3 py-3 text-center">Status Waktu</th>
+            <th class="px-4 py-3 text-left">Pupuk Terpilih</th>
+            <th class="px-3 py-3 text-center">Skor SAW</th>
+            <th class="px-4 py-3 text-left">Waktu Analisis</th>
+            <th class="px-4 py-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          <% if (recommendations && recommendations.length > 0) { %>
+            <% recommendations.forEach((r, idx) => { %>
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="px-3 py-3.5 text-center text-slate-400 font-mono">
+                  <%= idx + 1 %>
+                </td>
+                <td class="px-4 py-3.5">
+                  <div class="font-bold text-slate-900 font-mono"><%= r.batch_code %></div>
+                  <div class="text-[11px] text-slate-400"><%= r.variety %></div>
+                </td>
+                <td class="px-4 py-3.5">
+                  <div class="font-medium text-slate-800 capitalize"><%= r.leaf_condition.replace(/_/g, ' ') %></div>
+                  <div class="text-[10px] text-slate-400">pH: <%= r.media_ph %> | Lembap: <%= r.media_moisture %></div>
+                </td>
+                <td class="px-3 py-3.5 capitalize text-slate-600">
+                  <%= r.growth_phase.replace(/_/g, ' ') %>
+                </td>
+                <td class="px-3 py-3.5 text-center">
+                  <% if (r.timing_status === 'LAYAK') { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                      Layak
+                    </span>
+                  <% } else if (r.timing_status === 'SIRAM_DAHULU') { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800">
+                      Siram Dulu
+                    </span>
+                  <% } else { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800">
+                      Tunda
+                    </span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3.5">
+                  <div class="font-bold text-slate-800 flex items-center">
+                    <%= r.top_fertilizer_name %>
+                    <% if (r.is_equivalent) { %>
+                      <span class="ml-1.5 px-1.5 py-0.2 text-[10px] bg-purple-100 text-purple-700 font-bold rounded" title="Setara dengan <%= r.second_fertilizer_name %>">Setara</span>
+                    <% } %>
+                  </div>
+                  <% if (r.dosage_level && r.dosage_level !== 'Tidak diaplikasikan') { %>
+                    <div class="text-[11px] text-palm-700"><%= r.dosage_amount %></div>
+                  <% } %>
+                </td>
+                <td class="px-3 py-3.5 text-center font-mono font-bold text-slate-800">
+                  <%= r.top_score !== null ? r.top_score.toFixed(4) : '-' %>
+                </td>
+                <td class="px-4 py-3.5 text-slate-500 text-[11px]">
+                  <%= new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) %>
+                </td>
+                <td class="px-4 py-3.5 text-right space-x-1">
+                  <a href="/rekomendasi/hasil/<%= r.id %>" class="inline-flex items-center px-2.5 py-1 bg-palm-50 hover:bg-palm-100 text-palm-700 rounded font-semibold transition text-[11px]" title="Lihat Rincian">
+                    Detail <i class="fas fa-chevron-right ml-1"></i>
+                  </a>
+
+                  <!-- Delete Item Form (Hanya Admin, Point 9 & 10) -->
+                  <% if (user) { %>
+                    <form action="/riwayat/hapus/<%= r.id %>" method="POST" class="inline-block" onsubmit="return confirm('Hapus data rekomendasi ini?');">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button type="submit" class="p-1 text-slate-400 hover:text-red-600 rounded transition" title="Hapus">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="9" class="px-4 py-12 text-center text-slate-400">
+                <i class="fas fa-inbox text-4xl mb-2 text-slate-200 block"></i>
+                Tidak ada data rekomendasi yang sesuai dengan kriteria saringan.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<%- include('../layouts/footer') %>

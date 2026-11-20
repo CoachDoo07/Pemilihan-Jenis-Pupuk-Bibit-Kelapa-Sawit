@@ -1,0 +1,535 @@
+<%- include('../layouts/header') %>
+
+<div class="space-y-6">
+
+  <!-- Header Breadcrumb & Actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 no-print">
+    <div>
+      <nav class="flex text-xs text-slate-400 mb-1" aria-label="Breadcrumb">
+        <a href="/" class="hover:text-slate-600">Dashboard</a>
+        <span class="mx-2">/</span>
+        <a href="/rekomendasi/baru" class="hover:text-slate-600">Analisis</a>
+        <span class="mx-2">/</span>
+        <span class="text-slate-600 font-medium">Hasil #<%= rec.batch_code %></span>
+      </nav>
+      <div class="flex items-center space-x-3">
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Hasil Rekomendasi Pemupukan</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-200 text-slate-800">
+          #<%= rec.batch_code %>
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-0.5">
+        Waktu analisis: <%= new Date(rec.created_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) %>
+      </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center space-x-2">
+      <button type="button" onclick="window.print()" class="inline-flex items-center px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-300 shadow-sm transition">
+        <i class="fas fa-print mr-1.5 text-slate-500"></i> Cetak / Simpan PDF
+      </button>
+      <a href="/rekomendasi/baru" class="inline-flex items-center px-4 py-2 rounded-xl bg-palm-600 hover:bg-palm-700 text-white font-semibold text-xs shadow-sm transition">
+        <i class="fas fa-plus mr-1.5"></i> Analisis Baru
+      </a>
+    </div>
+  </div>
+
+  <!-- Print Header Only (Visible when printing) -->
+  <div class="hidden print-only mb-6 border-b-2 border-slate-900 pb-4">
+    <div class="flex justify-between items-center">
+      <div>
+        <h2 class="text-xl font-bold uppercase tracking-wider text-slate-900">Laporan Rekomendasi Pemupukan Bibit Kelapa Sawit</h2>
+        <p class="text-xs text-slate-600">Sistem Pendukung Keputusan Metode Simple Additive Weighting (SAW) & Rule-Based Agronomi</p>
+      </div>
+      <div class="text-right text-xs">
+        <p class="font-mono font-bold">Batch: <%= rec.batch_code %></p>
+        <p class="text-slate-500"><%= new Date(rec.created_at).toLocaleDateString('id-ID') %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. STATUS EVALUASI KELAYAKAN WAKTU (TIMING RULE) -->
+  <div class="rounded-2xl border p-5 shadow-sm transition <%= rec.timing_status === 'TUNDA' ? 'bg-red-50 border-red-200 text-red-950' : (rec.timing_status === 'SIRAM_DAHULU' ? 'bg-amber-50 border-amber-200 text-amber-950' : 'bg-emerald-50 border-emerald-200 text-emerald-950') %>">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-start space-x-3.5">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 <%= rec.timing_status === 'TUNDA' ? 'bg-red-200 text-red-700' : (rec.timing_status === 'SIRAM_DAHULU' ? 'bg-amber-200 text-amber-700' : 'bg-emerald-200 text-emerald-700') %>">
+          <% if (rec.timing_status === 'TUNDA') { %>
+            <i class="fas fa-ban"></i>
+          <% } else if (rec.timing_status === 'SIRAM_DAHULU') { %>
+            <i class="fas fa-tint"></i>
+          <% } else { %>
+            <i class="fas fa-check-circle"></i>
+          <% } %>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs uppercase tracking-wider font-extrabold px-2 py-0.5 rounded <%= rec.timing_status === 'TUNDA' ? 'bg-red-200 text-red-800' : (rec.timing_status === 'SIRAM_DAHULU' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-200 text-emerald-800') %>">
+              Evaluasi Waktu Pemupukan
+            </span>
+            <span class="text-xs font-semibold text-slate-500">Kelembapan: <%= rec.media_moisture.replace(/_/g, ' ') %></span>
+          </div>
+          <h2 class="text-xl font-bold mt-1 tracking-tight"><%= rec.timing_title %></h2>
+          <p class="text-xs sm:text-sm mt-1 opacity-90 leading-relaxed max-w-4xl">
+            <%= rec.timing_note %>
+          </p>
+        </div>
+      </div>
+
+      <div class="md:text-right flex-shrink-0">
+        <span class="inline-block px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider border <%= rec.timing_status === 'TUNDA' ? 'bg-red-600 text-white border-red-700' : (rec.timing_status === 'SIRAM_DAHULU' ? 'bg-amber-500 text-white border-amber-600' : 'bg-emerald-600 text-white border-emerald-700') %>">
+          Status: <%= rec.timing_status.replace(/_/g, ' ') %>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. REKOMENDASI PUPUK TERPILIH & PANDUAN DOSIS -->
+  <% if (rec.timing_status !== 'TUNDA') { %>
+    <!-- Banner Catatan Akademik Indikatif (Point 16) -->
+    <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-950 text-xs flex items-center space-x-2.5 shadow-sm">
+      <i class="fas fa-info-circle text-blue-600 text-base flex-shrink-0"></i>
+      <span><strong>Catatan Akademik:</strong> Takaran dosis dan metode bersifat indikatif rancangan awal; wajib diverifikasi dengan literatur spesifik atau masukan petugas pembibitan sebelum diterapkan di lapangan.</span>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      
+      <!-- Top banner if Tie-breaking / Equivalence detected -->
+      <% if (rec.is_equivalent) { %>
+        <div class="bg-gradient-to-r from-purple-700 to-indigo-800 text-white px-5 py-3 flex items-center justify-between text-xs sm:text-sm">
+          <div class="flex items-center space-x-2 font-medium">
+            <i class="fas fa-balance-scale text-purple-200 text-base"></i>
+            <span><strong>Peringatan Pilihan Setara:</strong> Selisih skor peringkat 1 (<%= rec.top_fertilizer_name %>) dan peringkat 2 (<%= rec.second_fertilizer_name %>) kurang dari 0.05. Keduanya merupakan rekomendasi setara.</span>
+          </div>
+          <span class="hidden sm:inline-block px-2.5 py-0.5 rounded bg-purple-900/60 font-mono text-purple-200 text-xs font-bold">
+            &Delta; = <%= rec.top_score && rec.second_score ? Math.abs(rec.top_score - rec.second_score).toFixed(4) : '< 0.05' %>
+          </span>
+        </div>
+      <% } %>
+
+      <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Winner Info (Col 1) -->
+          <div class="lg:col-span-1 bg-gradient-to-br from-palm-50 to-emerald-50/40 rounded-xl p-5 border border-palm-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs uppercase font-extrabold text-palm-700 tracking-wider">
+                  <i class="fas fa-trophy text-amber-500 mr-1"></i> Rekomendasi Utama (Top 1)
+                </span>
+                <span class="font-mono text-xs font-bold bg-white text-palm-800 px-2 py-0.5 rounded border border-palm-300">
+                  <%= rec.top_fertilizer_code || 'A?' %>
+                </span>
+              </div>
+
+              <h3 class="text-2xl font-extrabold text-slate-900 mt-1"><%= rec.top_fertilizer_name %></h3>
+              
+              <% if (topFert) { %>
+                <div class="mt-2 text-xs text-slate-600">
+                  <span class="inline-block px-2 py-0.5 rounded bg-palm-100 text-palm-800 font-semibold text-[11px] mb-1">
+                    <%= topFert.category %>
+                  </span>
+                  <p class="font-medium text-slate-700 mt-1"><%= topFert.nutrient_content %></p>
+                  <p class="text-slate-500 text-[11px] mt-1 leading-relaxed"><%= topFert.description %></p>
+                </div>
+              <% } %>
+            </div>
+
+            <!-- Skor Akhir SAW -->
+            <div class="mt-6 pt-4 border-t border-palm-200 flex items-end justify-between">
+              <div>
+                <p class="text-[11px] text-slate-500 font-medium">Nilai Preferensi SAW (V)</p>
+                <div class="text-3xl font-extrabold text-palm-800 font-mono">
+                  <%= rec.top_score !== null ? rec.top_score.toFixed(4) : '-' %>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold text-palm-600">
+                  <%= rec.top_score !== null ? (rec.top_score * 100).toFixed(1) : '-' %>% Kecocokan
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dosage & Application Guide (Col 2 & 3) -->
+          <div class="lg:col-span-2 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex items-center space-x-2 pb-2 border-b border-slate-100 mb-3">
+                <i class="fas fa-prescription-bottle-alt text-palm-600 text-lg"></i>
+                <h4 class="font-bold text-slate-800 text-base">Panduan Dosis & Petunjuk Aplikasi</h4>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <!-- Tingkat Dosis -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <p class="text-xs text-slate-400 font-medium">Tingkat Dosis</p>
+                  <p class="text-sm font-bold text-slate-800 mt-0.5 flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full bg-palm-500 mr-2"></span>
+                    <%= rec.dosage_level %>
+                  </p>
+                  <% if (calc && calc.dosage && calc.dosage.phAdjustment) { %>
+                    <p class="text-[11px] text-amber-700 font-medium mt-1 bg-amber-50 p-1.5 rounded border border-amber-200">
+                      <i class="fas fa-exclamation-triangle mr-1"></i> <%= calc.dosage.phAdjustment %>
+                    </p>
+                  <% } %>
+                </div>
+
+                <!-- Takaran -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <p class="text-xs text-slate-400 font-medium">Takaran Per Bibit</p>
+                  <p class="text-sm font-bold text-palm-800 mt-0.5">
+                    <%= rec.dosage_amount %>
+                  </p>
+                </div>
+
+                <!-- Metode Aplikasi -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 sm:col-span-2">
+                  <p class="text-xs text-slate-400 font-medium">Metode & Cara Penempatan Pupuk</p>
+                  <p class="text-xs sm:text-sm text-slate-700 mt-1 leading-relaxed">
+                    <i class="fas fa-hand-holding-water text-palm-600 mr-1.5"></i>
+                    <%= rec.application_method %>
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Agronomic Notes & Research Validation -->
+            <div class="p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-950 space-y-1.5">
+              <div class="font-bold text-amber-900 flex items-center">
+                <i class="fas fa-leaf text-palm-700 mr-1.5"></i> Catatan Agronomi & Validasi Literatur
+              </div>
+              <p class="leading-relaxed">
+                <%= rec.agronomic_notes %>
+              </p>
+              <div class="text-[11px] text-amber-800/80 pt-1 border-t border-amber-200/60">
+                <strong>Rujukan Literatur:</strong> Kasno & Anggria (2016) menegaskan bahwa NPK majemuk (11-7-12) memberikan respon pertumbuhan terbaik pada bibit kelapa sawit di pembibitan dengan dosis optimum 5-6 g/pohon.
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Optional Second Choice if Equivalent with Full Dosage (Point 5) -->
+        <% if (rec.is_equivalent && rec.second_fertilizer_name) { %>
+          <div class="mt-5 p-4 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-950 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-purple-200/60">
+              <div>
+                <span class="font-bold text-purple-950 text-sm">
+                  <i class="fas fa-balance-scale mr-1 text-purple-700"></i> Rekomendasi Pilihan Setara: <%= rec.second_fertilizer_name %> (<%= rec.second_fertilizer_code %>)
+                </span>
+                <p class="text-purple-800 text-[11px] mt-0.5">
+                  Nilai skor preferensi: <strong class="font-mono"><%= rec.second_score ? rec.second_score.toFixed(4) : '-' %></strong>. Anda dapat mengaplikasikan alternatif ini jika stok pupuk utama tidak tersedia di gudang pembibitan.
+                </p>
+              </div>
+              <% if (secondFert) { %>
+                <div class="text-right text-[11px] text-purple-700 font-medium">
+                  <%= secondFert.nutrient_content %>
+                </div>
+              <% } %>
+            </div>
+
+            <% if (calc && calc.dosageSecond) { %>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white/70 p-3 rounded-lg border border-purple-200/80">
+                <div>
+                  <span class="text-slate-400 text-[11px] block">Tingkat Dosis Pupuk Kedua</span>
+                  <span class="font-bold text-purple-900"><%= calc.dosageSecond.level %></span>
+                </div>
+                <div>
+                  <span class="text-slate-400 text-[11px] block">Takaran Pupuk Kedua</span>
+                  <span class="font-bold text-purple-900"><%= calc.dosageSecond.amount %></span>
+                </div>
+                <div>
+                  <span class="text-slate-400 text-[11px] block">Metode Aplikasi</span>
+                  <span class="text-slate-700 text-[11px]"><%= calc.dosageSecond.method %></span>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+
+      </div>
+
+    </div>
+  <% } else { %>
+    <!-- TUNDA Notice (Point 7: Tidak menjalankan SAW dan tidak menampilkan tabel ranking) -->
+    <div class="bg-white rounded-2xl border border-red-200 p-6 shadow-sm">
+      <div class="max-w-3xl">
+        <h3 class="text-base font-bold text-red-800 mb-2">Instruksi Tindakan Saat Pemupukan Ditunda</h3>
+        <p class="text-xs text-red-700 font-medium mb-3">
+          Sesuai aturan agronomi, pemupukan tidak dilakukan dan perhitungan ranking SAW ditangguhkan hingga kelembapan media kembali optimal.
+        </p>
+        <ul class="text-xs sm:text-sm text-slate-700 space-y-2 list-disc list-inside leading-relaxed">
+          <li><strong>Periksa Sistem Drainase:</strong> Pastikan lubang samping dan bawah polybag tidak tersumbat lumpur agar air genangan cepat keluar.</li>
+          <li><strong>Evaluasi Curah Hujan:</strong> Tunggu jeda hujan minimal 1 - 2 hari hingga permukaan tanah polybag mulai mengering ke kondisi remah lembap (kapasitas lapang).</li>
+          <li><strong>Hindari Pemupukan Paksa:</strong> Pemupukan saat jenuh air memboroskan biaya dan memicu keracunan perakaran atau pembusukan bibit akibat hilangnya pupuk ke saluran air.</li>
+        </ul>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- 3. DETAIL PARAMETER MASUKAN -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <div class="flex items-center space-x-2 pb-2 border-b border-slate-100 mb-4">
+      <i class="fas fa-clipboard-list text-palm-600"></i>
+      <h3 class="font-bold text-slate-800 text-sm">Parameter Masukan Kondisi Bibit & Media</h3>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <p class="text-slate-400">Kondisi Daun (C1 - 35%)</p>
+        <p class="font-bold text-slate-800 mt-1 capitalize"><%= rec.leaf_condition.replace(/_/g, ' ') %></p>
+      </div>
+
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <p class="text-slate-400">Fase Bibit (C2 - 25%)</p>
+        <p class="font-bold text-slate-800 mt-1 capitalize"><%= rec.growth_phase.replace(/_/g, ' ') %></p>
+      </div>
+
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <p class="text-slate-400">pH Media Tanam (C3 - 20%)</p>
+        <p class="font-bold text-slate-800 mt-1 capitalize"><%= rec.media_ph %></p>
+      </div>
+
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <p class="text-slate-400">Kelembapan Media (C4 - 20%)</p>
+        <p class="font-bold text-slate-800 mt-1 capitalize"><%= rec.media_moisture.replace(/_/g, ' ') %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. TRANSPARANSI PERHITUNGAN LENGKAP METODE SAW (Hanya tampil jika tidak TUNDA, Point 7) -->
+  <% if (rec.timing_status !== 'TUNDA' && calc && calc.saw) { %>
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      
+      <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-slate-50/50">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-0.5 rounded bg-palm-600 text-white font-mono text-xs font-bold">SAW Core</span>
+            <h3 class="font-extrabold text-slate-900 text-base">Transparansi Tahapan Perhitungan Metode SAW</h3>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Bukti matematis lengkap: Matriks Keputusan &rarr; Normalisasi (Benefit) &rarr; Pembobotan &rarr; Skor Preferensi Akhir
+          </p>
+        </div>
+        <span class="text-xs text-palm-700 bg-palm-50 border border-palm-200 px-2.5 py-1 rounded-lg font-medium">
+          Semua Kriteria: <strong>Benefit</strong>
+        </span>
+      </div>
+
+      <div class="p-5 space-y-6">
+
+        <!-- Tahap 1: Matriks Keputusan (X) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center">
+              <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-xs flex items-center justify-center mr-2 font-mono">1</span>
+              Matriks Keputusan (\( X \)) & Nilai Maksimum Kriteria (\( \max_i x_{ij} \))
+            </h4>
+            <span class="text-[11px] text-slate-400 font-mono">Skala Kecocokan 1 - 5</span>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="min-w-full divide-y divide-slate-200 text-xs text-center">
+              <thead class="bg-slate-50 font-semibold text-slate-700 text-[11px]">
+                <tr>
+                  <th class="px-4 py-2.5 text-left">Kode & Alternatif Pupuk</th>
+                  <th class="px-3 py-2.5">C1 (Daun)</th>
+                  <th class="px-3 py-2.5">C2 (Fase)</th>
+                  <th class="px-3 py-2.5">C3 (pH)</th>
+                  <th class="px-3 py-2.5">C4 (Kelembapan)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <% calc.saw.decisionMatrix.forEach(row => { %>
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="px-4 py-2 text-left font-medium text-slate-800">
+                      <span class="font-mono font-bold text-palm-700 mr-1.5"><%= row.fertilizerCode %></span>
+                      <%= row.fertilizerName %>
+                    </td>
+                    <td class="px-3 py-2 font-mono"><%= row.scores.C1 %></td>
+                    <td class="px-3 py-2 font-mono"><%= row.scores.C2 %></td>
+                    <td class="px-3 py-2 font-mono"><%= row.scores.C3 %></td>
+                    <td class="px-3 py-2 font-mono"><%= row.scores.C4 %></td>
+                  </tr>
+                <% }) %>
+                <!-- Baris Nilai Maksimum -->
+                <tr class="bg-palm-50/70 font-bold text-palm-950">
+                  <td class="px-4 py-2 text-left">Nilai Maksimum Tiap Kriteria (\( \max x_j \))</td>
+                  <td class="px-3 py-2 font-mono text-palm-800"><%= calc.saw.maxPerCriteria.C1 %></td>
+                  <td class="px-3 py-2 font-mono text-palm-800"><%= calc.saw.maxPerCriteria.C2 %></td>
+                  <td class="px-3 py-2 font-mono text-palm-800"><%= calc.saw.maxPerCriteria.C3 %></td>
+                  <td class="px-3 py-2 font-mono text-palm-800"><%= calc.saw.maxPerCriteria.C4 %></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1 italic">
+            *Formula normalisasi kriteria Benefit: \( r_{ij} = \frac{x_{ij}}{\max_i(x_{ij})} \).
+          </p>
+        </div>
+
+        <!-- Tahap 2: Matriks Ternormalisasi (R) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center">
+              <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-xs flex items-center justify-center mr-2 font-mono">2</span>
+              Matriks Ternormalisasi (\( R \))
+            </h4>
+            <span class="text-[11px] text-slate-400 font-mono">r_ij = x_ij / max(x_j)</span>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="min-w-full divide-y divide-slate-200 text-xs text-center">
+              <thead class="bg-slate-50 font-semibold text-slate-700 text-[11px]">
+                <tr>
+                  <th class="px-4 py-2.5 text-left">Alternatif</th>
+                  <th class="px-3 py-2.5">\( r_{i1} \) (Daun)</th>
+                  <th class="px-3 py-2.5">\( r_{i2} \) (Fase)</th>
+                  <th class="px-3 py-2.5">\( r_{i3} \) (pH)</th>
+                  <th class="px-3 py-2.5">\( r_{i4} \) (Kelembapan)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <% calc.saw.normalizedMatrix.forEach(row => { %>
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="px-4 py-2 text-left font-medium text-slate-800">
+                      <span class="font-mono font-bold text-palm-700 mr-1.5"><%= row.fertilizerCode %></span>
+                      <%= row.fertilizerName %>
+                    </td>
+                    <td class="px-3 py-2 font-mono"><%= row.values.C1.toFixed(4) %></td>
+                    <td class="px-3 py-2 font-mono"><%= row.values.C2.toFixed(4) %></td>
+                    <td class="px-3 py-2 font-mono"><%= row.values.C3.toFixed(4) %></td>
+                    <td class="px-3 py-2 font-mono"><%= row.values.C4.toFixed(4) %></td>
+                  </tr>
+                <% }) %>
+                <!-- Baris Bobot W -->
+                <tr class="bg-purple-50 font-bold text-purple-950">
+                  <td class="px-4 py-2 text-left">Vektor Bobot Kriteria (\( w_j \))</td>
+                  <td class="px-3 py-2 font-mono text-purple-800"><%= calc.saw.weights.C1.toFixed(2) %></td>
+                  <td class="px-3 py-2 font-mono text-purple-800"><%= calc.saw.weights.C2.toFixed(2) %></td>
+                  <td class="px-3 py-2 font-mono text-purple-800"><%= calc.saw.weights.C3.toFixed(2) %></td>
+                  <td class="px-3 py-2 font-mono text-purple-800"><%= calc.saw.weights.C4.toFixed(2) %></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tahap 3: Matriks Terbobot (W * R) & Skor Akhir (V) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center">
+              <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-xs flex items-center justify-center mr-2 font-mono">3</span>
+              Perhitungan Nilai Preferensi (\( V_i = \sum w_j \times r_{ij} \)) & Perangkingan
+            </h4>
+            <span class="text-[11px] text-slate-400 font-mono">Urutan Peringkat Rekomendasi</span>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="min-w-full divide-y divide-slate-200 text-xs text-center">
+              <thead class="bg-slate-50 font-semibold text-slate-700 text-[11px]">
+                <tr>
+                  <th class="px-3 py-2.5">Peringkat</th>
+                  <th class="px-4 py-2.5 text-left">Kode & Nama Pupuk</th>
+                  <th class="px-3 py-2.5">\( w_1 \cdot r_{i1} \)</th>
+                  <th class="px-3 py-2.5">\( w_2 \cdot r_{i2} \)</th>
+                  <th class="px-3 py-2.5">\( w_3 \cdot r_{i3} \)</th>
+                  <th class="px-3 py-2.5">\( w_4 \cdot r_{i4} \)</th>
+                  <th class="px-4 py-2.5 text-center font-bold text-slate-900 bg-palm-100/50">Skor Akhir (\( V_i \))</th>
+                  <th class="px-3 py-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <% calc.saw.ranking.forEach((item, index) => { 
+                  const weightedItem = calc.saw.weightedMatrix.find(w => w.fertilizerCode === item.fertilizerCode);
+                %>
+                  <tr class="hover:bg-slate-50/70 transition <%= index === 0 ? 'bg-palm-50/30 font-semibold' : '' %>">
+                    <td class="px-3 py-2.5">
+                      <% if (index === 0) { %>
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-palm-600 text-white font-bold text-xs">
+                          1
+                        </span>
+                      <% } else if (index === 1 && calc.saw.isEquivalent) { %>
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-xs" title="Pilihan Setara">
+                          2*
+                        </span>
+                      <% } else { %>
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-medium text-xs">
+                          <%= index + 1 %>
+                        </span>
+                      <% } %>
+                    </td>
+                    <td class="px-4 py-2.5 text-left">
+                      <span class="font-mono font-bold text-palm-700 mr-1"><%= item.fertilizerCode %></span>
+                      <span class="text-slate-800"><%= item.fertilizerName %></span>
+                    </td>
+                    <td class="px-3 py-2.5 font-mono text-slate-500"><%= weightedItem ? weightedItem.values.C1.toFixed(4) : '-' %></td>
+                    <td class="px-3 py-2.5 font-mono text-slate-500"><%= weightedItem ? weightedItem.values.C2.toFixed(4) : '-' %></td>
+                    <td class="px-3 py-2.5 font-mono text-slate-500"><%= weightedItem ? weightedItem.values.C3.toFixed(4) : '-' %></td>
+                    <td class="px-3 py-2.5 font-mono text-slate-500"><%= weightedItem ? weightedItem.values.C4.toFixed(4) : '-' %></td>
+                    <td class="px-4 py-2.5 text-center font-mono font-bold text-base text-palm-800 bg-palm-100/30">
+                      <%= item.score.toFixed(4) %>
+                    </td>
+                    <td class="px-3 py-2.5">
+                      <% if (index === 0) { %>
+                        <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                          Rekomendasi Utama
+                        </span>
+                      <% } else if (index === 1 && calc.saw.isEquivalent) { %>
+                        <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold text-[10px]">
+                          Pilihan Setara (&Delta; &lt; 0.05)
+                        </span>
+                      <% } else { %>
+                        <span class="text-slate-400 text-[11px]">Alternatif</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  <% } %>
+
+  <!-- Print Signature Section (Visible when printing) -->
+  <div class="hidden print-only mt-12 pt-6 border-t border-slate-300">
+    <div class="grid grid-cols-2 gap-8 text-xs">
+      <div>
+        <p class="text-slate-500">Mengetahui,</p>
+        <p class="font-bold text-slate-800 mt-1">Dosen Pengampu / Pembimbing</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">(........................................................)</p>
+        <p class="text-[10px] text-slate-400">NIP.</p>
+      </div>
+      <div class="text-right">
+        <p class="text-slate-500">Tanggal: <%= new Date(rec.created_at).toLocaleDateString('id-ID') %></p>
+        <p class="font-bold text-slate-800 mt-1">Petugas Pengawas Nursery</p>
+        <div class="h-16"></div>
+        <p class="font-bold underline">Rafael Rizky L. T. / Aldo Rachmat H.</p>
+        <p class="text-[10px] text-slate-400">NRP: 3125522007 / 3125522003</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Buttons -->
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 no-print">
+    <a href="/riwayat" class="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center">
+      <i class="fas fa-arrow-left mr-1.5"></i> Kembali ke Riwayat
+    </a>
+    <div class="flex items-center space-x-2">
+      <a href="/rekomendasi/baru" class="px-4 py-2 rounded-xl bg-palm-600 hover:bg-palm-700 text-white font-bold text-xs transition">
+        <i class="fas fa-plus mr-1.5"></i> Input Data Bibit Lainnya
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<%- include('../layouts/footer') %>

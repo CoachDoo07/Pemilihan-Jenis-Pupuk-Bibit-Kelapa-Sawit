@@ -1,0 +1,67 @@
+  </main>
+
+  <!-- Academic Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-auto no-print text-slate-600">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+        
+        <!-- Info Proyek -->
+        <div>
+          <div class="flex items-center space-x-2 text-palm-800 font-bold mb-1">
+            <i class="fas fa-seedling text-palm-600"></i>
+            <span>Sistem Pendukung Keputusan SAW</span>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Aplikasi pemilihan jenis pupuk bibit kelapa sawit di nursery dengan evaluasi kelayakan waktu, perhitungan SAW transparan, dan penentuan dosis terarah.
+          </p>
+        </div>
+
+        <!-- Tim Pengembang Mahasiswa -->
+        <div>
+          <h4 class="font-semibold text-slate-800 mb-1.5 text-xs uppercase tracking-wider">Tim Pengembang</h4>
+          <ul class="text-xs space-y-1 text-slate-600">
+            <li class="flex items-center space-x-1.5">
+              <i class="fas fa-user-graduate text-palm-600 w-4"></i>
+              <span class="font-medium text-slate-800">Rafael Rizky Luga Tanjung</span>
+              <span class="text-slate-400 font-mono">(NRP: 3125522007)</span>
+            </li>
+            <li class="flex items-center space-x-1.5">
+              <i class="fas fa-user-graduate text-palm-600 w-4"></i>
+              <span class="font-medium text-slate-800">Aldo Rachmat Hidayat</span>
+              <span class="text-slate-400 font-mono">(NRP: 3125522003)</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Rujukan Agronomi -->
+        <div>
+          <h4 class="font-semibold text-slate-800 mb-1.5 text-xs uppercase tracking-wider">Rujukan Agronomi</h4>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            Kasno, A., & Anggria, L. (2016). <em>Peningkatan Pertumbuhan Kelapa Sawit di Pembibitan dengan Pemupukan NPK</em>. Jurnal Littri, 22(3), 107-114.
+          </p>
+          <div class="mt-2 text-[11px] text-palm-700 font-medium">
+            <i class="fas fa-check-double mr-1"></i> Dosis NPK 11-7-12: 5-6 g/pohon
+          </div>
+        </div>
+
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400">
+        <p>&copy; <%= new Date().getFullYear() %> SPK Pembibitan Kelapa Sawit - Metode Simple Additive Weighting (SAW).</p>
+        <p class="mt-2 sm:mt-0 font-medium text-palm-700">Tugas Kuliah Sistem Pendukung Keputusan</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Mobile Menu Script -->
+  <script>
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (menuBtn && mobileMenu) {
+      menuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+      });
+    }
+  </script>
+</body>
+</html>
